@@ -1,0 +1,10 @@
+__pycache__
+/frontend/node_modules
+/frontend/package-lock.json
+/venv
+ 
+# Written by build script
+/frontend/.env.staging
+
+#local file that holds the deploy IP
+.env.sh

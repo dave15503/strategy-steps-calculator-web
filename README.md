@@ -1,10 +1,11 @@
 # strategy-steps-web-calculator
 A simple, textual, calculator to keep tracks of the numbers for playing the WiiParty Strategy Steps Game in real life
 
-This is not a full game. It features no graphics and has the sole intent to keep tracks of scores and numbers when playing the Strategy Steps Game from WiiParty IRL. 
+This is not a full game. It features no sophisticated graphics and has the sole intent to keep tracks of scores and numbers when playing the Strategy Steps Game from WiiParty IRL. 
 Using a simple Website that communicates with a Websocket server, Players enter their choice of number. When everybody picked, the winner gets deduced and gains in score.
 
-This lacks some major features such as announcing the winner, and was quickly built with the focus of providing a relatively stable experience. Rejoining Lobbys is implemented but not tested, other players choices are veiled in the Web Socket's broadcast messages to avoid cheating.
+This lacks some major features such as announcing the winner, and was built in one day with the focus of providing a relatively stable experience. Rejoining Lobbys is implemented but not tested, other players choices are veiled in the Web Socket's broadcast messages to avoid cheating.
+
 
 ## In case anybody ever wants to use and deploy this
 
@@ -13,6 +14,14 @@ This lacks some major features such as announcing the winner, and was quickly bu
 The Root directory houses the single python file that makes up the server. It is simply run and then listens for WebSockets trying to connect. In deployment, It also hosts the compiled Javascript&Html of the frontend with the FastAPI library.
 
 This frontend is found in the `frontend` directory and is build upon SolidJs and the Socket.io Library.
+
+### Dependencies
+
+In order to build a docker image, you need to have installed:
+
+- Python3 with pip and venv
+- node.js and npm
+- docker
 
 ### Running locally
 
