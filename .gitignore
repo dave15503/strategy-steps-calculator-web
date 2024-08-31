@@ -8,3 +8,4 @@ __pycache__
 
 #local file that holds the deploy IP
 .env.sh
+dockercommands.txt

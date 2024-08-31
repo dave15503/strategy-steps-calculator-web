@@ -19,6 +19,18 @@ interface Contestant {
     State: "NOT_READY" | "READY" | "PICKING" | "HAS_PICKED";
 }
 
+interface GameOptions {
+    Choices: number[];
+    Goal: number;
+    PlayerCount: number;
+}
+
+interface Session {
+    Contestants: Record<string, Contestant>;
+    GameOptions: GameOptions;
+    Id: number;
+}
+
 interface ContestantLineProps {
     Contestant: Contestant;
     Goal: number
@@ -39,7 +51,7 @@ const ContestantLine: Component<ContestantLineProps> = (props: ContestantLinePro
     }
 
     return  <tr class="contestant">
-                <td style={`color: ${ isConnected ? "green" : "red"};`}>{isConnected}</td>
+                <td style={`color: ${ cont.IsConnected ? "green" : "red"};`}>{isConnected}</td>
                 <td class="name">{cont.Name}</td>
                 <td>{status}</td>
                 <td class={cont.DidWin ? "won last-guess" : "last-guess"}>
@@ -55,7 +67,7 @@ const GamePage: Component<GamePageProps> = (props: GamePageProps) => {
     
     const [error, setError] = createSignal<any>(null);
 
-    const [session, setSession] = createSignal<any>(null);
+    const [session, setSession] = createSignal<Session | undefined>(undefined);
 
     // connect to ws
     const socket = io(BACKEND_URI + "/", {
@@ -66,12 +78,12 @@ const GamePage: Component<GamePageProps> = (props: GamePageProps) => {
 
 
     socket.on("connect_error", (err: Error) => {
-        setSession(null);
+        setSession(undefined);
         setError(err);
     })
 
     socket.on("error", (msg: string) => {
-        setSession(null);
+        setSession(undefined);
         setError(new Error(msg));
     })
 
@@ -79,7 +91,7 @@ const GamePage: Component<GamePageProps> = (props: GamePageProps) => {
         console.log("connected!");
     })
 
-    socket.on("broadcast", (data) => {
+    socket.on("broadcast", (data: Session) => {
         console.log(data)
         setSession(data)
     })
@@ -96,16 +108,25 @@ const GamePage: Component<GamePageProps> = (props: GamePageProps) => {
 
 
     const currentPlayers = () => {
-        if(session() == null) return 0;
+        const sess = session();
+        if(sess == undefined) return 0;
         let count = 0;
-        Object.entries(session().Contestants).forEach(([key, val]) => {
+        Object.entries(sess.Contestants).forEach(([key, val]) => {
             if(val.IsConnected) count++;
         });
         return count;
     }
     const playerCount = () => {
-        if(session() == null) return 0;
-        return session().GameOptions.PlayerCount
+        const sess = session();
+        if(sess == undefined) return 0;
+        return sess.GameOptions.PlayerCount
+    }
+
+    const hasFinished = () => {
+        const sess = session();
+        if(sess == null) return false;
+        let me = sess.Contestants[props.SessionInfo.Name]
+        return me.Progress >= sess.GameOptions.Goal
     }
 
     return (
@@ -115,7 +136,7 @@ const GamePage: Component<GamePageProps> = (props: GamePageProps) => {
             <hr></hr>
             {error() ? <ErrorView Error={error()}></ErrorView> : ""}
             {session() ? <>
-                <div>Goal to reach: {session().GameOptions.Goal}</div>
+                <div>Goal to reach: {session()!.GameOptions.Goal}</div>
                 <div>{currentPlayers()} of {playerCount()} Players joined:</div>
                 <table id="contestants-table">
                     <tbody>
@@ -126,8 +147,8 @@ const GamePage: Component<GamePageProps> = (props: GamePageProps) => {
                             <th>Last</th>
                             <th>Progress</th>
                         </tr>
-                        {Object.entries(session().Contestants).map(([k, v]) => {
-                            return <ContestantLine Contestant={v as Contestant} Goal={session().GameOptions.Goal}></ContestantLine>
+                        {Object.entries(session()!.Contestants).map(([k, v]) => {
+                            return <ContestantLine Contestant={v as Contestant} Goal={session()!.GameOptions.Goal}></ContestantLine>
                         })}
                     </tbody>
                 </table>
@@ -135,13 +156,19 @@ const GamePage: Component<GamePageProps> = (props: GamePageProps) => {
                 {
                     currentPlayers() < playerCount() ? 
                         <div>Waiting for Players...</div>
-                    :
-                    <div class="choice-buttons">
-                        {session().GameOptions.Choices.map((c:number) => <div onclick={() => onViewSelectChoice(c)}>{c}</div>)}
-                    </div>
+                    : (
+                        hasFinished() ?
+                        <div class="finish-message">
+                            You finished!
+                        </div>
+                        :
+                        <div class="choice-buttons">
+                            {session()!.GameOptions.Choices.map((c:number) => <div onclick={() => onViewSelectChoice(c)}>{c}</div>)}
+                        </div>
+                    )
                 }
                 
-            </>: ""}
+            </> : ""}
         </div>
     )
 }
