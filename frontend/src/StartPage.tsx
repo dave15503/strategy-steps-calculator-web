@@ -1,4 +1,4 @@
-import { Component } from "solid-js"
+import { Component, onMount } from "solid-js"
 import { Properties } from "solid-js/web";
 import { BACKEND_URI } from "../globals";
 import { SessionInformation } from "./App";
@@ -18,30 +18,52 @@ const StartPage: Component<StartPageProps> = (props: StartPageProps) => {
 
     const createSession = async () => {
         
+        // save the users name into local storage to simplify reconnects
+        let username: string = nameTextareaDom.value;
+        localStorage.setItem("username", username);
+
         const request = await fetch(BACKEND_URI + "/api/start_session?" + new URLSearchParams({
             PlayerCount: playerInputDom.value,
             Choices: choicesTextareaDom.value,
             Goal: goalInputDom.value
         }));
         const text = await request.text();
-        
+        const sessionId = parseInt(text);
+
+        localStorage.setItem("sessionId", sessionId.toString());
+
         props.onSubmit({
             Name: nameTextareaDom.value,
-            SessionId: parseInt(text),
-           
+            SessionId: sessionId,
         })
     }
 
     const joinSession = () => {
 
+        // save the users name into local storage to simplify reconnects
+        let username: string = nameTextareaDom.value;
+        localStorage.setItem("username", username);
+        let sessionId = parseInt(idTextareaDom.value);
+        localStorage.setItem("sessionId", sessionId.toString());
 
 
         props.onSubmit({
             Name: nameTextareaDom.value,
-            SessionId: parseInt(idTextareaDom.value)
+            SessionId: sessionId
         })
     }
 
+    onMount(async () => {
+        // recover username from storage
+        let username = localStorage.getItem("username");
+        if(username != null) {
+            nameTextareaDom.value = username;
+        }
+        let sessionId = localStorage.getItem("sessionId");
+        if(sessionId != null) {
+            idTextareaDom.value = sessionId;
+        }
+    });
 
     return (
         <div>
@@ -49,17 +71,9 @@ const StartPage: Component<StartPageProps> = (props: StartPageProps) => {
                 <div>Name</div>
                 <textarea ref={nameTextareaDom} rows={1} cols={20}></textarea>
             </div>
+
             <hr></hr>
-            <h4>Join a Session</h4>
-            <div class="btn-row">
-                <div>3 Digit Code</div>
-                <textarea ref={idTextareaDom} rows={1} cols={20}></textarea>
-            </div>
-            <div class="btn-row">
-                <div></div>
-                <button onclick={() => joinSession()}>Join by code</button>
-            </div>
-            <hr></hr>
+            
             <h4>Create a Session</h4>
             <div class="btn-row">
                 <div>Choices (csv)</div>
@@ -77,7 +91,18 @@ const StartPage: Component<StartPageProps> = (props: StartPageProps) => {
                 <div></div>
                 <button onclick={() => createSession()}>Start Session</button>
             </div>
+
+            <hr></hr>
             
+            <h4>Join a Session</h4>
+            <div class="btn-row">
+                <div>3 Digit Code</div>
+                <textarea ref={idTextareaDom} rows={1} cols={20}></textarea>
+            </div>
+            <div class="btn-row">
+                <div></div>
+                <button onclick={() => joinSession()}>Join by code</button>
+            </div>
         </div>
     );
 }

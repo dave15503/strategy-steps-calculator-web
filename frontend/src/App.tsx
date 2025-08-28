@@ -22,6 +22,13 @@ const App: Component = () => {
                     <StartPage onSubmit={(sessionInfo) => setSession(sessionInfo)}></StartPage> :
                     <GamePage SessionInfo={session()!}></GamePage>
             }
+            <footer>
+                <h5>
+                    Cookie Notice
+                </h5>
+                This page writes to localStorage to save username and last joined sessionId entered in the text fields above. You can
+                opt out from this policy by not using this page 👍.
+            </footer>
         </div>
     );
 };

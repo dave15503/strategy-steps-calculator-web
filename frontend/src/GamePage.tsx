@@ -17,6 +17,7 @@ interface Contestant {
     Progress: number;
     IsConnected: boolean;
     State: "NOT_READY" | "READY" | "PICKING" | "HAS_PICKED";
+    FinishedAs: number;
 }
 
 interface GameOptions {
@@ -47,7 +48,7 @@ const ContestantLine: Component<ContestantLineProps> = (props: ContestantLinePro
         status = "✅"
     }
     else if (cont.Progress >= props.Goal) {
-        status = "🚩"
+        status = "🚩" + cont.FinishedAs + "."
     }
 
     return  <tr class="contestant">

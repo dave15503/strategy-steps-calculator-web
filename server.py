@@ -69,6 +69,7 @@ class Contestant:
         self.State = ContestantState.NOT_READY
         self.DidWin = False
         self.IsConnected = True
+        self.FinishedAs = -1
 
     def to_json(self, unveil):
         jobj = dict()
@@ -79,6 +80,7 @@ class Contestant:
         jobj["State"] = self.State.value
         jobj["DidWin"] = self.DidWin
         jobj["IsConnected"] = self.IsConnected
+        jobj["FinishedAs"] = self.FinishedAs
         return jobj
 
 class GameOptions:
@@ -102,10 +104,12 @@ class Session:
         self.GameOptions = GameOptions(choices, playerCount, goal)
         self.Contestants = dict()
         self.Lock = asyncio.Lock()
+        # Place the next contestant that crosses the finishing line gets
+        self.NextFinishingContestantPosition = 1
 
     def get_connected_contestants_count(self):
         count = 0
-        for contestant in self.Contestants:
+        for contestant in self.Contestants.values():
             if contestant.IsConnected:
                 count += 1
         return count
@@ -169,6 +173,8 @@ class Session:
             for contestant in self.get_competing_contestants():
                 counts[contestant.Choice] += 1
 
+            finishedThisTurn = 0
+
             for contestant in self.get_competing_contestants():
 
                 contestantKey = contestant.Name
@@ -177,12 +183,23 @@ class Session:
                     # contestant won
                     self.Contestants[contestantKey].Progress += contestant.Choice
                     self.Contestants[contestantKey].DidWin = True
+
+                    # figure out if the player reached past the goal
+                    # and give him a finishing position
+                    if self.Contestants[contestantKey].Progress >= self.GameOptions.Goal:
+                        finishedThisTurn += 1
+                        self.Contestants[contestantKey].FinishedAs = self.NextFinishingContestantPosition
+
                 else:
                     self.Contestants[contestantKey].DidWin = False
                 
                 #reset all flags
                 self.Contestants[contestantKey].State = ContestantState.DONE
             
+            # update finished position: People who pass in the same turn get the same place
+            # so increase by the amount of people who finished this turn
+            self.NextFinishingContestantPosition += finishedThisTurn
+
 
     def connected_players(self):
         count = 0
@@ -311,11 +328,14 @@ async def disconnect(sid):
         # remove the new client from the session
         sessions[sessionId].disconnect_contestant(name, sid)
         await sessions[sessionId].broadcast()
-        
+        print("Client Disconnected: "+" "+str(sid))
+
+        # if this was the last user to leave the session, then delete it
+        if sessions[sessionId].get_connected_contestants_count() == 0:
+            del sessions[sessionId]
+            print("Deleted empty session " + str(sessionId));
 
 
-
-    print("Client Disconnected: "+" "+str(sid))
 
 
 
